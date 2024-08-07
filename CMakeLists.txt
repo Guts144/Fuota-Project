@@ -12,18 +12,14 @@ find_package(PahoMqttCpp REQUIRED)
 
 # Include directories
 include_directories(${PahoMqttCpp_INCLUDE_DIRS} sources/cloud)
-<<<<<<< Updated upstream
-include_directories(${PahoMqttCpp_INCLUDE_DIRS} sources/Common)
-include_directories(${PahoMqttCpp_INCLUDE_DIRS} sources/ConnectivityStack)
-=======
 include_directories(${PahoMqttCpp_INCLUDE_DIRS} sources/common)
->>>>>>> Stashed changes
+include_directories(${PahoMqttCpp_INCLUDE_DIRS} sources/connectivityStack)
 
 # Source files
 set(SOURCES
     main.cpp
     sources/cloud/cloudConnector.cpp
-    sources/ConnectivityStack/connectivityStack.cpp
+    sources/connectivityStack/connectivityStack.cpp
 )
 
 # Check if source files exist
