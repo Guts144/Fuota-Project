@@ -1,25 +1,12 @@
 #include "cloudConnector.hpp"
+#include "constants.hpp"
 #include <iostream>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 namespace cloud {
-
-    // Function to disable echoing of characters in terminal
-    void disableEcho() {
-        termios tty;
-        tcgetattr(STDIN_FILENO, &tty);
-        tty.c_lflag &= ~ECHO;
-        tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-    }
-
-    // Function to enable echoing of characters in terminal
-    void enableEcho() {
-        termios tty;
-        tcgetattr(STDIN_FILENO, &tty);
-        tty.c_lflag |= ECHO;
-        tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-    }
 
     class callback : public virtual mqtt::callback {
     public:
@@ -42,11 +29,12 @@ namespace cloud {
     };
 
     cloudConnector::cloudConnector()
-        : SERVER_ADDRESS("ssl://80023f4bb4494e2ab22556f738a67541.s1.eu.hivemq.cloud:8883"),
-          CLIENT_ID("80023f4bb4494e2ab22556f738a67541") {
+        : SERVER_ADDRESS(constant::SERVER_ADR),
+          CLIENT_ID(constant::CLIENT_ID) {
         
         std::string username;
         std::string password;
+
         // Prompt the user for the username and password
         std::cout << "Enter username: ";
         std::cin >> username;
@@ -59,14 +47,41 @@ namespace cloud {
         connOpts.set_user_name(username);
         connOpts.set_password(password);
         connOpts.set_connect_timeout(60);
+
         // Set SSL options
         mqtt::ssl_options sslopts;
-        sslopts.set_trust_store("/home/vboxuser/FUOTA-project/isrgrootx1.pem"); // Path to the CA certificate file
+        sslopts.set_trust_store(getCaCertPath()); // Path to the CA certificate file
         connOpts.set_ssl(sslopts);
     }
 
     cloudConnector::~cloudConnector() {
         delete client;
+    }
+
+    // Function to disable echoing of characters in terminal
+    void cloudConnector::disableEcho() {
+        termios tty;
+        tcgetattr(STDIN_FILENO, &tty);
+        tty.c_lflag &= ~ECHO;
+        tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+    }
+
+    // Function to enable echoing of characters in terminal
+    void cloudConnector::enableEcho() {
+        termios tty;
+        tcgetattr(STDIN_FILENO, &tty);
+        tty.c_lflag |= ECHO;
+        tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+    }
+
+    // Function to get the path to the CA certificate file
+    inline std::string cloudConnector::getCaCertPath() {
+        const char* homeDir = getenv("HOME");
+        if (homeDir == nullptr) {
+            struct passwd* password = getpwuid(getuid());
+            homeDir = password->pw_dir;
+        }
+        return std::string(homeDir) + "/Fuota-Project/CAcert.pem";
     }
 
     void cloudConnector::Connect() {

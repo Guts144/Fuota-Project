@@ -15,6 +15,10 @@ namespace cloud {
         void Subscribe(const std::string& topic) override;
 
     private:
+        void disableEcho();
+        void enableEcho();
+        inline std::string getCaCertPath();
+        
         mqtt::async_client* client;
         mqtt::connect_options connOpts;
         const std::string SERVER_ADDRESS;

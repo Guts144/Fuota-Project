@@ -1,14 +1,15 @@
 #pragma once
 
-#include "Common/IcloudConnector.hpp"
-#include "Common/IraucManager.hpp"
-#include "RaucManager/downloader.hpp"
+#include "IcloudConnector.hpp"
+#include "IraucManager.hpp"
 
-namespace connectivity {
+namespace connectivityStack {
 
 class connectivityStack {
+public:
     connectivityStack() = default;
     ~connectivityStack() = default;
+    void cloudConnection();
 };
 
 }  // namespace connectivityStack
