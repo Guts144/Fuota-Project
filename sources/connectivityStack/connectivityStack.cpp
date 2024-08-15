@@ -33,7 +33,7 @@ void connectivityStack::cloudConnection() {
     // connector->Publish("t/a", "Hello, MQTT!");
 
     // Read the URL from the file
-    std::ifstream inFile("/home/vboxuser/Fuota-Project/resources/url.txt");
+    std::ifstream inFile(getUserPath() + "/Fuota-Project/resources/url.txt");
     std::string   url;
     if (inFile.is_open()) {
         std::getline(inFile, url);
