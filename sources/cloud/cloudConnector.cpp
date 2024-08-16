@@ -11,6 +11,8 @@ namespace cloud {
 
 class callback : public virtual mqtt::callback {
  public:
+    explicit callback(std::function<void(const std::string&)> callbackFunc) : callbackFunc(callbackFunc) {}
+
     void connection_lost(const std::string& cause) override {
         std::cout << "\nConnection lost";
         if (!cause.empty()) std::cout << ". Cause: " << cause << std::endl;
@@ -20,48 +22,42 @@ class callback : public virtual mqtt::callback {
         std::cout << "\nMessage arrived" << std::endl;
         std::cout << "Topic: " << msg->get_topic() << std::endl;
         std::cout << "Payload: " << msg->to_string() << std::endl;
-        writeMessageToFile(msg->to_string());
+
+        if (callbackFunc) {
+            callbackFunc(msg->to_string());  // Call the user-provided callback
+        }
     }
+
     void delivery_complete(mqtt::delivery_token_ptr token) override { std::cout << "\nDelivery complete for token: " << (token ? token->get_message_id() : -1) << std::endl; }
 
  private:
-    void writeMessageToFile(const std::string& message) {
-        std::ofstream outFile(cloudConnector::getUserPath() + "/Fuota-Project/resources/url.txt");
-        if (outFile.is_open()) {
-            outFile << message;
-            outFile.close();
-        } else {
-            std::cerr << "Unable to open file for writing" << std::endl;
-        }
-    }
+    std::function<void(const std::string&)> callbackFunc;  // Store the callback function
 };
 
 cloudConnector::cloudConnector() : SERVER_ADDRESS(constant::SERVER_ADR), CLIENT_ID(constant::CLIENT_ID) {
     std::string username;
     std::string password;
 
-    // Prompt the user for the username and password
     std::cout << "Enter username: ";
     std::cin >> username;
     std::cout << "Enter password: ";
     disableEcho();
     std::cin >> password;
     enableEcho();
+
     client = new mqtt::async_client(SERVER_ADDRESS, CLIENT_ID);
     connOpts.set_clean_session(true);
     connOpts.set_user_name(username);
     connOpts.set_password(password);
     connOpts.set_connect_timeout(60);
 
-    // Set SSL options
     mqtt::ssl_options sslopts;
-    sslopts.set_trust_store(getUserPath() + "/Fuota-Project/CAcert.pem");  // Path to the CA certificate file
+    sslopts.set_trust_store(getUserPath() + "/Fuota-Project/CAcert.pem");
     connOpts.set_ssl(sslopts);
 }
 
 cloudConnector::~cloudConnector() { delete client; }
 
-// Function to disable echoing of characters in terminal
 void cloudConnector::disableEcho() {
     termios tty;
     tcgetattr(STDIN_FILENO, &tty);
@@ -69,7 +65,6 @@ void cloudConnector::disableEcho() {
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
-// Function to enable echoing of characters in terminal
 void cloudConnector::enableEcho() {
     termios tty;
     tcgetattr(STDIN_FILENO, &tty);
@@ -77,7 +72,6 @@ void cloudConnector::enableEcho() {
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
-// Function to get the path to the CA certificate file
 inline std::string cloudConnector::getUserPath() {
     const char* homeDir = getenv("HOME");
     if (homeDir == nullptr) {
@@ -88,7 +82,7 @@ inline std::string cloudConnector::getUserPath() {
 }
 
 void cloudConnector::Connect() {
-    static callback cb;
+    static callback cb(messageCallback);  // Pass the stored callback to the mqtt callback
     client->set_callback(cb);
 
     try {
@@ -131,4 +125,7 @@ void cloudConnector::Subscribe(const std::string& topic) {
         std::cerr << "Error subscribing to topic: " << exc.what() << std::endl;
     }
 }
+
+// Implement the setMessageCallback method
+void cloudConnector::setMessageCallback(std::function<void(const std::string&)> callback) { messageCallback = callback; }
 }  // namespace cloud

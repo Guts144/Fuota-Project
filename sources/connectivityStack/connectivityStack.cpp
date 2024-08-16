@@ -10,8 +10,7 @@
 #include "constants.hpp"
 
 namespace connectivityStack {
-
-// Flag to indicate when to stop the loop
+// Define the external flag variable
 volatile std::sig_atomic_t l_stopFlag = 0;
 
 // Signal handler function
@@ -19,32 +18,31 @@ void signalHandler(int signum) {
     l_stopFlag = 1;  // Set the flag to true when Ctrl+C is pressed
 }
 
+// Callback function to be called when a new MQTT message is received
+void onMessageReceived(const std::string& message, imageDownloader::downloader& p_downloader) {
+    // Assuming the message contains the URL
+    std::string url = message;
+    if (!url.empty()) {
+        p_downloader.downloadFileFromAzure(url);
+    }
+}
+
 void connectivityStack::cloudConnection() {
     // Register the signal handler
     std::signal(SIGINT, signalHandler);
 
-    imageDownloader::downloader             p_downloader;
+    // Initialize the downloader
+    imageDownloader::downloader p_downloader;
+
     // Create a unique_ptr to a cloudConnector instance
     std::unique_ptr<cloud::IcloudConnector> connector = std::make_unique<cloud::cloudConnector>();
+
+    // Set up the callback for message reception
+    connector->setMessageCallback([&p_downloader](const std::string& message) { onMessageReceived(message, p_downloader); });
 
     // Use the connector to call the functions
     connector->Connect();
     connector->Subscribe("t/a");
-    // connector->Publish("t/a", "Hello, MQTT!");
-
-    // Read the URL from the file
-    std::ifstream inFile(getUserPath() + "/Fuota-Project/resources/url.txt");
-    std::string   url;
-    if (inFile.is_open()) {
-        std::getline(inFile, url);
-        inFile.close();
-    } else {
-        std::cerr << "Unable to open file for reading" << std::endl;
-    }
-
-    if (!url.empty()) {
-        p_downloader.download(url);
-    }
 
     // Infinite loop that will keep the program running
     while (!l_stopFlag) {

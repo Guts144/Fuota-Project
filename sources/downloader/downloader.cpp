@@ -1,37 +1,13 @@
+#include "connectivityStack.hpp"
 #include "downloader.hpp"
 #include <iostream>
 #include <fstream>
 #include <curl/curl.h>
-#include <regex>
-#include <map>
 #include <pwd.h>
-#include <fstream>
 #include <unistd.h>
+#include <csignal>  // Include for signal handling
 
 namespace imageDownloader {
-
-inline std::string downloader::getUserPath() {
-    const char* homeDir = getenv("HOME");
-    if (homeDir == nullptr) {
-        struct passwd* password = getpwuid(getuid());
-        homeDir                 = password->pw_dir;
-    }
-    return std::string(homeDir);
-}
-
-int downloader::download(const std::string& url) {
-    std::string fileId = url.substr(url.find("/d/") + 3);
-    fileId             = fileId.substr(0, fileId.find('/'));
-
-    std::string outputFilePath = getUserPath() + "/Fuota-Project/resources/downloaded_file.iso";  // Change as needed
-    if (downloadFileFromGoogleDrive(fileId, outputFilePath)) {
-        std::cout << "Download completed successfully." << std::endl;
-    } else {
-        std::cerr << "Download failed." << std::endl;
-    }
-
-    return 0;
-}
 
 size_t downloader::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile   = static_cast<std::ofstream*>(userp);
@@ -40,29 +16,52 @@ size_t downloader::WriteCallback(void* contents, size_t size, size_t nmemb, void
     return totalSize;
 }
 
-bool downloader::downloadFileFromGoogleDrive(const std::string& fileId, const std::string& outputFilePath) {
-    std::cout << "sahha1" << std::endl;
+int downloader::ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+    if (dltotal > 0) {
+        double percent = (static_cast<double>(dlnow) / static_cast<double>(dltotal)) * 100.0;
+        std::cout << "\rDownload progress: " << static_cast<int>(percent) << "%" << std::flush;
+    }
+    if (connectivityStack::l_stopFlag) {
+        return 1;  // Return non-zero to indicate that the operation should be aborted
+    }
+    return 0;  // Return 0 to continue the download
+}
+
+bool downloader::downloadFileFromAzure(const std::string& url) {
     CURL*         curl;
     CURLcode      res;
-    std::string   url = "https://drive.google.com/uc?export=download&id=" + fileId;
-    std::ofstream outFile(outputFilePath, std::ios::binary);
+    std::ofstream outFile("/home/vboxuser/Fuota-Project/resources/imageUpdate.iso", std::ios::binary);
 
     if (!outFile.is_open()) {
-        std::cerr << "Failed to open file for writing: " << outputFilePath << std::endl;
+        std::cerr << "Failed to open file for writing: "
+                  << "/home/vboxuser/Fuota-Project/resources/imageUpdate.iso" << std::endl;
         return false;
     }
-    std::cout << "sahha2" << std::endl;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
     if (curl) {
+        // Set options for libcurl
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outFile);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);  // Follow redirects if any
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+        // Set the progress function
+        curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
+        curl_easy_setopt(curl, CURLOPT_XFERINFODATA, nullptr);  // Optional, can be used to pass user data to the callback
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);         // Enable progress reporting
 
         // Perform the file download
         res = curl_easy_perform(curl);
+        while (connectivityStack::l_stopFlag && res == CURLE_OK) {
+            // Abort the download if the stop flag is set
+            curl_easy_cleanup(curl);
+            curl_global_cleanup();
+            outFile.close();
+            return false;
+        }
+
         if (res != CURLE_OK) {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
             curl_easy_cleanup(curl);
@@ -70,13 +69,30 @@ bool downloader::downloadFileFromGoogleDrive(const std::string& fileId, const st
             return false;
         }
 
+        // Check the content length
+        double fileSize;
+        curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &fileSize);
+        if (fileSize < 0) {
+            std::cerr << "Failed to get file size" << std::endl;
+            curl_easy_cleanup(curl);
+            curl_global_cleanup();
+            return false;
+        }
+        std::cout << "File size: " << fileSize << " bytes" << std::endl;
+
         curl_easy_cleanup(curl);
     }
-    std::cout << "sahha3" << std::endl;
+
     curl_global_cleanup();
     outFile.close();
 
-    std::cout << "File downloaded successfully to " << outputFilePath << std::endl;
+    if (connectivityStack::l_stopFlag) {
+        std::cout << "Download was stopped by user" << std::endl;
+        return false;
+    }
+
+    std::cout << "File downloaded successfully to "
+              << "/home/vboxuser/Fuota-Project/resources/imageUpdate.iso" << std::endl;
     return true;
 }
 }  // namespace imageDownloader
