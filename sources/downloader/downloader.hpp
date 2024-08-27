@@ -9,8 +9,7 @@ class downloader {
  public:
     downloader()  = default;
     ~downloader() = default;
-    bool               downloadFileFromAzure(const std::string& url);
-    inline std::string getUserPath();
+    bool downloadFileFromAzure(const std::string& url, const std::string g_userPath);
 
  private:
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);

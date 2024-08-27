@@ -7,7 +7,7 @@
 namespace cloud {
 class cloudConnector : public IcloudConnector {
  public:
-    cloudConnector();
+    cloudConnector(std::string userPath);
     ~cloudConnector();
 
     void Connect() override;
@@ -15,8 +15,6 @@ class cloudConnector : public IcloudConnector {
     void Publish(const std::string& topic, const std::string& payload) override;
     void Subscribe(const std::string& topic) override;
     void setMessageCallback(std::function<void(const std::string&)> callback) override;  // New method
-
-    static std::string getUserPath();
 
  private:
     void disableEcho();

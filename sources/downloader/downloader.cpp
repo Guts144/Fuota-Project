@@ -21,20 +21,19 @@ int downloader::ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t d
         double percent = (static_cast<double>(dlnow) / static_cast<double>(dltotal)) * 100.0;
         std::cout << "\rDownload progress: " << static_cast<int>(percent) << "%" << std::flush;
     }
-    if (connectivityStack::l_stopFlag) {
+    if (connectivityStack::g_stopFlag) {
         return 1;  // Return non-zero to indicate that the operation should be aborted
     }
     return 0;  // Return 0 to continue the download
 }
 
-bool downloader::downloadFileFromAzure(const std::string& url) {
+bool downloader::downloadFileFromAzure(const std::string& url, const std::string g_userPath) {
     CURL*         curl;
     CURLcode      res;
-    std::ofstream outFile("/home/vboxuser/Fuota-Project/resources/imageUpdate.iso", std::ios::binary);
+    std::ofstream outFile(g_userPath + "/Fuota-Project/resources/imageUpdate.iso", std::ios::binary);
 
     if (!outFile.is_open()) {
-        std::cerr << "Failed to open file for writing: "
-                  << "/home/vboxuser/Fuota-Project/resources/imageUpdate.iso" << std::endl;
+        std::cerr << "Failed to open file for writing: " << g_userPath + "/Fuota-Project/resources/imageUpdate.iso" << std::endl;
         return false;
     }
 
@@ -54,7 +53,7 @@ bool downloader::downloadFileFromAzure(const std::string& url) {
 
         // Perform the file download
         res = curl_easy_perform(curl);
-        while (connectivityStack::l_stopFlag && res == CURLE_OK) {
+        while (connectivityStack::g_stopFlag && res == CURLE_OK) {
             // Abort the download if the stop flag is set
             curl_easy_cleanup(curl);
             curl_global_cleanup();
@@ -86,13 +85,12 @@ bool downloader::downloadFileFromAzure(const std::string& url) {
     curl_global_cleanup();
     outFile.close();
 
-    if (connectivityStack::l_stopFlag) {
+    if (connectivityStack::g_stopFlag) {
         std::cout << "Download was stopped by user" << std::endl;
         return false;
     }
 
-    std::cout << "File downloaded successfully to "
-              << "/home/vboxuser/Fuota-Project/resources/imageUpdate.iso" << std::endl;
+    std::cout << "File downloaded successfully to " << g_userPath + "/Fuota-Project/resources/imageUpdate.iso" << std::endl;
     return true;
 }
 }  // namespace imageDownloader

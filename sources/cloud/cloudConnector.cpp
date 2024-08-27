@@ -34,7 +34,7 @@ class callback : public virtual mqtt::callback {
     std::function<void(const std::string&)> callbackFunc;  // Store the callback function
 };
 
-cloudConnector::cloudConnector() : SERVER_ADDRESS(constant::SERVER_ADR), CLIENT_ID(constant::CLIENT_ID) {
+cloudConnector::cloudConnector(std::string userPath) : SERVER_ADDRESS(constant::SERVER_ADR), CLIENT_ID(constant::CLIENT_ID) {
     std::string username;
     std::string password;
 
@@ -52,7 +52,7 @@ cloudConnector::cloudConnector() : SERVER_ADDRESS(constant::SERVER_ADR), CLIENT_
     connOpts.set_connect_timeout(60);
 
     mqtt::ssl_options sslopts;
-    sslopts.set_trust_store(getUserPath() + "/Fuota-Project/CAcert.pem");
+    sslopts.set_trust_store(userPath + "/Fuota-Project/CAcert.pem");
     connOpts.set_ssl(sslopts);
 }
 
@@ -70,15 +70,6 @@ void cloudConnector::enableEcho() {
     tcgetattr(STDIN_FILENO, &tty);
     tty.c_lflag |= ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-}
-
-inline std::string cloudConnector::getUserPath() {
-    const char* homeDir = getenv("HOME");
-    if (homeDir == nullptr) {
-        struct passwd* password = getpwuid(getuid());
-        homeDir                 = password->pw_dir;
-    }
-    return std::string(homeDir);
 }
 
 void cloudConnector::Connect() {
