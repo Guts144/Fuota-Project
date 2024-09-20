@@ -5,7 +5,7 @@ namespace raucManager {
 
 class raucManager : public IraucManager {
  public:
-    raucManager() = default;
+    raucManager()  = default;
     ~raucManager() = default;
     void getInfo() override;
     void installBundle() override;
