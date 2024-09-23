@@ -8,12 +8,12 @@
 namespace connectivityStack {
 extern volatile sig_atomic_t g_stopFlag;
 
-class connectivityStack {
+class ConnectivityStack {
  public:
-    connectivityStack()  = default;
-    ~connectivityStack() = default;
+    ConnectivityStack()  = default;
+    ~ConnectivityStack() = default;
     void                        cloudConnection();
-    imageDownloader::downloader p_downloader;
+    imageDownloader::Downloader p_downloader;
 
  private:
     void        getUserPath();

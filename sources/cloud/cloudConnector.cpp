@@ -9,9 +9,9 @@
 
 namespace cloud {
 
-class callback : public virtual mqtt::callback {
+class Callback : public virtual mqtt::callback {
  public:
-    explicit callback(std::function<void(const std::string&)> callbackFunc) : callbackFunc(callbackFunc) {}
+    explicit Callback(std::function<void(const std::string&)> callbackFunc) : callbackFunc(callbackFunc) {}
 
     void connection_lost(const std::string& cause) override {
         std::cout << "\nConnection lost";
@@ -34,7 +34,7 @@ class callback : public virtual mqtt::callback {
     std::function<void(const std::string&)> callbackFunc;  // Store the callback function
 };
 
-cloudConnector::cloudConnector(std::string userPath) : SERVER_ADDRESS(constant::SERVER_ADR), CLIENT_ID(constant::CLIENT_ID) {
+CloudConnector::CloudConnector(std::string userPath) : SERVER_ADDRESS(constant::SERVER_ADR), CLIENT_ID(constant::CLIENT_ID) {
     std::string username;
     std::string password;
 
@@ -56,24 +56,24 @@ cloudConnector::cloudConnector(std::string userPath) : SERVER_ADDRESS(constant::
     connOpts.set_ssl(sslopts);
 }
 
-cloudConnector::~cloudConnector() { delete client; }
+CloudConnector::~CloudConnector() { delete client; }
 
-void cloudConnector::disableEcho() {
+void CloudConnector::disableEcho() {
     termios tty;
     tcgetattr(STDIN_FILENO, &tty);
     tty.c_lflag &= ~ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
-void cloudConnector::enableEcho() {
+void CloudConnector::enableEcho() {
     termios tty;
     tcgetattr(STDIN_FILENO, &tty);
     tty.c_lflag |= ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
-void cloudConnector::Connect() {
-    static callback cb(messageCallback);  // Pass the stored callback to the mqtt callback
+void CloudConnector::Connect() {
+    static Callback cb(messageCallback);  // Pass the stored callback to the mqtt callback
     client->set_callback(cb);
 
     try {
@@ -86,7 +86,7 @@ void cloudConnector::Connect() {
     }
 }
 
-void cloudConnector::Disconnect() {
+void CloudConnector::Disconnect() {
     try {
         std::cout << "Disconnecting from the MQTT server..." << std::endl;
         client->disconnect()->wait();
@@ -96,7 +96,7 @@ void cloudConnector::Disconnect() {
     }
 }
 
-void cloudConnector::Publish(const std::string& topic, const std::string& payload) {
+void CloudConnector::Publish(const std::string& topic, const std::string& payload) {
     try {
         mqtt::message_ptr pubmsg = mqtt::make_message(topic, payload);
         pubmsg->set_qos(1);
@@ -107,7 +107,7 @@ void cloudConnector::Publish(const std::string& topic, const std::string& payloa
     }
 }
 
-void cloudConnector::Subscribe(const std::string& topic) {
+void CloudConnector::Subscribe(const std::string& topic) {
     try {
         std::cout << "Subscribing to topic '" << topic << "'..." << std::endl;
         client->subscribe(topic, 1)->wait();
@@ -118,5 +118,5 @@ void cloudConnector::Subscribe(const std::string& topic) {
 }
 
 // Implement the setMessageCallback method
-void cloudConnector::setMessageCallback(std::function<void(const std::string&)> callback) { messageCallback = callback; }
+void CloudConnector::setMessageCallback(std::function<void(const std::string&)> callback) { messageCallback = callback; }
 }  // namespace cloud

@@ -5,10 +5,10 @@
 #include <string>
 
 namespace imageDownloader {
-class downloader {
+class Downloader {
  public:
-    downloader()  = default;
-    ~downloader() = default;
+    Downloader()  = default;
+    ~Downloader() = default;
     bool downloadFileFromAzure(const std::string& url, const std::string g_userPath);
 
  private:

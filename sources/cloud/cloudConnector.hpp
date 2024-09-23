@@ -5,10 +5,10 @@
 #include "IcloudConnector.hpp"
 
 namespace cloud {
-class cloudConnector : public IcloudConnector {
+class CloudConnector : public IcloudConnector {
  public:
-    cloudConnector(std::string userPath);
-    ~cloudConnector();
+    CloudConnector(std::string userPath);
+    ~CloudConnector();
 
     void Connect() override;
     void Disconnect() override;

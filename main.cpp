@@ -1,7 +1,7 @@
 #include "connectivityStack.hpp"
 
 int main() {
-    connectivityStack::connectivityStack stack;
+    connectivityStack::ConnectivityStack stack;
     stack.cloudConnection();
 
     return 0;

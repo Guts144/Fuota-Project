@@ -9,14 +9,14 @@
 
 namespace imageDownloader {
 
-size_t downloader::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+size_t Downloader::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     std::ofstream* outFile   = static_cast<std::ofstream*>(userp);
     size_t         totalSize = size * nmemb;
     outFile->write(static_cast<char*>(contents), totalSize);
     return totalSize;
 }
 
-int downloader::ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+int Downloader::ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
     if (dltotal > 0) {
         double percent = (static_cast<double>(dlnow) / static_cast<double>(dltotal)) * 100.0;
         std::cout << "\rDownload progress: " << static_cast<int>(percent) << "%" << std::flush;
@@ -27,7 +27,7 @@ int downloader::ProgressCallback(void* clientp, curl_off_t dltotal, curl_off_t d
     return 0;  // Return 0 to continue the download
 }
 
-bool downloader::downloadFileFromAzure(const std::string& url, const std::string g_userPath) {
+bool Downloader::downloadFileFromAzure(const std::string& url, const std::string g_userPath) {
     CURL*         curl;
     CURLcode      res;
     std::ofstream outFile(g_userPath + "/Fuota-Project/resources/imageUpdate.iso", std::ios::binary);
